@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  lastUsed  DateTime @updatedAt
+  expiresAt DateTime
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model User {
+  id                String              @id @default(cuid())
+  name              String
+  email             String              @unique
+  password          String
+  emailVerified     Boolean             @default(false)
+  twoFactorEnabled  Boolean             @default(false)
+  twoFactorSecret   String?
+  sessions          Session[]
+  VerificationToken VerificationToken[]
+}
+
+model VerificationToken {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code       String
+  type       TokenType
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime
+  consumedAt DateTime?
+  attempts   Int       @default(0)
+
+  @@index([code])
+  @@index([userId, type])
+}
+
+enum TokenType {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}

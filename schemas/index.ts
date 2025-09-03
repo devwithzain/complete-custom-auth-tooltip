@@ -1,0 +1,37 @@
+import * as z from "zod";
+
+export const registerFormSchema = z.object({
+   name: z.string()
+      .min(2, { message: 'Name must be at least 2 characters' })
+      .max(50, { message: 'Name must be at most 50 characters' }),
+   email: z.string().email({ message: 'Invalid email address' }).toLowerCase(),
+   password: z.string()
+      .min(8, { message: 'Password must be at least 8 characters' })
+      .regex(/[A-Z]/, { message: 'Password must contain at least one uppercase letter' })
+      .regex(/[a-z]/, { message: 'Password must contain at least one lowercase letter' })
+      .regex(/[0-9]/, { message: 'Password must contain at least one number' })
+      .regex(/[^A-Za-z0-9]/, { message: 'Password must contain at least one symbol' }),
+});
+
+export const loginFormSchema = z.object({
+   email: z.string().email({ message: 'Invalid email address' }),
+   password: z.string().min(1, { message: 'Password is required' })
+});
+
+export const requestResetSchema = z.object({
+   email: z.string().email()
+});
+
+export const resetPasswordSchema = z.object({
+   token: z.string().min(10),
+   password: z.string().min(8)
+});
+
+export const emailVerifySchema = z.object({
+   code: z.string().length(6, "Code must be 6 digits").regex(/^\d{6}$/, "Code must contain only digits"),
+});
+
+export type TloginFormData = z.infer<typeof loginFormSchema>;
+export type TregisterFormData = z.infer<typeof registerFormSchema>;
+export type TresetPasswordFormData = z.infer<typeof resetPasswordSchema>;
+export type TemailVerifyFormData = z.infer<typeof emailVerifySchema>;
