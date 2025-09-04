@@ -1,57 +1,131 @@
 "use client";
-import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
 import { formimg } from "@/public";
 import toast from "react-hot-toast";
+import { useState, useRef } from "react";
 import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { useRouter } from "next/navigation";
-import { AtSign, KeyRound, X } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { resetFormSchema, TresetFormData } from "@/schemas";
-import { reset, verifyPasswordResetCode } from "@/action/reset";
+import {
+	emailSchema,
+	codeSchema,
+	resetPasswordSchema,
+	TresetPasswordFormData,
+	TEmailSchema,
+} from "@/schemas";
+import { useRouter } from "next/navigation";
 
-export default function ResetForm() {
+export default function ResetPasswordForm() {
 	const router = useRouter();
-	const [code, setCode] = useState("");
+	const [step, setStep] = useState<1 | 2 | 3>(1);
 	const [email, setEmail] = useState("");
-	const [showCodeForm, setShowCodeForm] = useState(false);
+	const [codeDigits, setCodeDigits] = useState(["", "", "", "", "", ""]);
+	const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+	const [code, setCode] = useState("");
+	const [isVerifying, setIsVerifying] = useState(false);
+
+	// Step 1: Email Form
 	const {
-		register,
-		handleSubmit,
-		formState: { isSubmitting, errors },
-	} = useForm<TresetFormData>({
-		resolver: zodResolver(resetFormSchema),
+		register: registerEmail,
+		handleSubmit: handleEmailSubmit,
+		formState: { isSubmitting: isEmailSubmitting, errors: emailErrors },
+	} = useForm({ resolver: zodResolver(emailSchema) });
+
+	// Step 2: Code Form
+	const {
+		handleSubmit: handleCodeSubmit,
+		setValue: setCodeValue,
+		formState: { errors: codeErrors },
+	} = useForm({
+		resolver: zodResolver(codeSchema),
+		defaultValues: { code: "" },
 	});
 
-	const onSubmits = async (data: TresetFormData) => {
-		const response = await reset(data);
-		setEmail(data.email);
-		if (response?.error) {
-			toast.error(response.error);
-		}
-		if (response?.success) {
-			toast.success(response.success);
-			setShowCodeForm(true);
+	// Step 3: Password Form
+	const {
+		register: registerPassword,
+		handleSubmit: handlePasswordSubmit,
+		formState: { isSubmitting: isPasswordSubmitting, errors: passwordErrors },
+	} = useForm({
+		resolver: zodResolver(resetPasswordSchema),
+		defaultValues: { email, code, password: "" },
+	});
+
+	// Email submit
+	const onEmailSubmit = async (data: TEmailSchema) => {
+		const res = await fetch("/api/auth/send-reset-code", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(data),
+		});
+		const body = await res.json();
+		if (res.ok && body.success) {
+			setEmail(data.email);
+			toast.success("Code sent to your email!");
+			setStep(2);
+		} else {
+			toast.error(body.error || "Failed to send code");
 		}
 	};
 
-	const onVerifyCode = async (e: React.FormEvent<HTMLFormElement>) => {
-		e.preventDefault();
-
-		if (!code) {
-			toast.error("Please provide code");
-			return;
+	// Code input logic
+	const handleChange = (idx: number, value: string) => {
+		if (/^\d?$/.test(value)) {
+			const newDigits = [...codeDigits];
+			newDigits[idx] = value;
+			setCodeDigits(newDigits);
+			setCodeValue("code", newDigits.join(""));
+			if (value && idx < 5) {
+				inputRefs.current[idx + 1]?.focus();
+			}
 		}
+	};
 
-		const res = await verifyPasswordResetCode(email, code);
+	// Backspace
+	const handleKeyDown = (
+		idx: number,
+		e: React.KeyboardEvent<HTMLInputElement>,
+	) => {
+		if (e.key === "Backspace" && !codeDigits[idx] && idx > 0) {
+			inputRefs.current[idx - 1]?.focus();
+		}
+	};
 
-		if (res.success) {
-			toast.success("Code verified! Redirecting...");
-			router.push(`/new-password?code=${code}`);
+	// Code submit
+	const onCodeSubmit = async (data: { code: string }) => {
+		setIsVerifying(true);
+		const res = await fetch("/api/auth/verify-reset-code", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ email, code: data.code }),
+		});
+		const body = await res.json();
+		setIsVerifying(false);
+		if (res.ok && body.success) {
+			setCode(data.code);
+			toast.success("Code verified!");
+			setStep(3);
 		} else {
-			toast.error(res.message || "Invalid code");
+			toast.error(body.error || "Invalid code");
+		}
+	};
+
+	// Password submit
+	const onPasswordSubmit = async (data: TresetPasswordFormData) => {
+		console.log(data);
+		const res = await fetch("/api/auth/reset-password", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ email, code, password: data.password }),
+		});
+		const body = await res.json();
+		console.log(body);
+		if (res.ok && body.success) {
+			toast.success("Password changed!");
+			router.push("/login");
+		} else {
+			toast.error(body.error || "Failed to change password");
 		}
 	};
 
@@ -60,102 +134,120 @@ export default function ResetForm() {
 			initial={{ y: "115%" }}
 			animate={{ y: "0%" }}
 			transition={{ duration: 1, ease: "easeInOut" }}
-			className="w-[70%] bg-[#04031b] py-5 rounded-lg relative">
-			<div className="w-full flex justify-between items-center">
-				<div className="w-1/2 pointer-events-none pl-5">
+			className="w-[60%] h-[80vh] bg-[#04031b] rounded-xl py-5 relative">
+			<div className="w-full h-full flex justify-between items-center pl-5">
+				<div className="w-1/2 h-full pointer-events-none">
 					<Image
 						src={formimg}
-						alt="formimg"
-						className="w-full object-cover rounded-lg"
-						width={800}
-						height={400}
-						priority
+						alt="fromImage"
+						className="w-full h-full object-cover rounded-xl"
 					/>
 				</div>
 				<div className="w-1/2 flex items-center justify-center">
 					<div className="w-full px-10 flex justify-center flex-col gap-5">
-						{!showCodeForm ? (
-							<>
-								<div className="flex flex-col gap-2">
-									<h1 className="text-[30px] text-white font-medium leading-tight tracking-tight">
-										Forgot password
-									</h1>
-									<p className="sub-paragraph text-white font-medium leading-tight tracking-tight">
-										Enter you&apos;r email address to recive password reset
-										code.
-									</p>
-								</div>
-								<form
-									onSubmit={handleSubmit(onSubmits)}
-									className="flex flex-col gap-5">
-									<div className="flex flex-col gap-5">
-										<div
-											className={`w-full flex items-center bg-[#3c375269] rounded-lg p-4 focus-within:border-[#3920BA] focus-within:border-[1px] focus-within:ring-1 ${
-												errors.email && "border-red-500 border-[1px]"
-											}`}>
-											<AtSign className="text-[#6D6980] mr-3" />
-											<input
-												type="email"
-												{...register("email")}
-												placeholder="Email"
-												className={`bg-transparent text-white placeholder:text-[#6D6980] focus:outline-none outline-none w-full montserrat`}
-											/>
-										</div>
-										{errors.email && (
-											<span className="text-red-500 text-sm">
-												{errors.email.message}
-											</span>
-										)}
-									</div>
-									<input
-										type="submit"
-										value={`${isSubmitting ? "Loading..." : "Send reset email"}`}
-										className="w-full bg-[#2f1d88] rounded-lg p-4 text-[16px] text-white font-normal text-center leading-tight tracking-tight cursor-pointer"
-										disabled={isSubmitting}
-									/>
-								</form>
-							</>
-						) : (
-							<>
-								<div className="flex flex-col gap-2">
-									<h1 className="text-[30px] text-white font-medium leading-tight tracking-tight">
-										Enter Reset Code
-									</h1>
-									<p className="sub-paragraph text-white font-medium leading-tight tracking-tight">
-										Please enter the 6-digit code sent to your email.
-									</p>
-								</div>
-								<form
-									onSubmit={onVerifyCode}
-									className="flex flex-col gap-5">
-									<div className="flex flex-col gap-5">
-										<div className="w-full flex items-center bg-[#3c375269] rounded-lg p-4 focus-within:border-[#3920BA] focus-within:border-[1px] focus-within:ring-1">
-											<KeyRound className="text-[#6D6980] mr-3" />
-											<input
-												type="text"
-												autoComplete="none"
-												maxLength={6}
-												placeholder="Enter 6-digit code"
-												onChange={(e) => setCode(e.target.value)}
-												className="bg-transparent text-white placeholder:text-[#6D6980] focus:outline-none outline-none w-full montserrat"
-											/>
-										</div>
-									</div>
-									<button
-										type="submit"
-										className="w-full bg-[#2f1d88] rounded-lg p-4 text-[16px] text-white font-normal text-center leading-tight tracking-tight cursor-pointer">
-										Verify Code
-									</button>
-								</form>
-							</>
+						{step === 1 && (
+							<form
+								onSubmit={handleEmailSubmit(onEmailSubmit)}
+								className="w-full flex flex-col gap-8">
+								<h1 className="subHeading text-white font-bold leading-tight tracking-tight montserrat mb-2">
+									Enter your Email
+								</h1>
+								<input
+									{...registerEmail("email")}
+									type="email"
+									placeholder="Email"
+									className="w-full h-16 text-white text-xl rounded-lg bg-[#23213a] border border-[#726c8e] px-4 montserrat outline-none focus:border-[#3920BA] focus:ring-1 placeholder:text-[#726c8e]"
+								/>
+								{emailErrors.email && (
+									<span className="text-red-500 text-sm montserrat">
+										{emailErrors.email.message}
+									</span>
+								)}
+								<button
+									type="submit"
+									className="w-full bg-[#2f1d88] rounded-lg p-4 text-[16px] text-white font-normal text-center leading-tight tracking-tight cursor-pointer montserrat"
+									disabled={isEmailSubmitting}>
+									{isEmailSubmitting ? (
+										<Loader2 className="animate-spin mx-auto" />
+									) : (
+										"Send Code"
+									)}
+								</button>
+							</form>
 						)}
-						<div>
-							<Link
-								href="/sign-in"
-								className="text-sm text-[#ADABB8] font-normal leading-tight tracking-tight hover:underline absolute right-4 top-4 bg-[#2f1d88] rounded-md p-3">
-								<X size={30} />
-							</Link>
-						</div>
+
+						{step === 2 && (
+							<form
+								onSubmit={handleCodeSubmit(onCodeSubmit)}
+								className="w-full flex flex-col gap-8">
+								<h1 className="subHeading text-white font-bold leading-tight tracking-tight montserrat mb-2">
+									Enter 6-digit Code
+								</h1>
+								<div className="w-full flex gap-3">
+									{codeDigits.map((digit, idx) => (
+										<input
+											key={idx}
+											type="text"
+											inputMode="numeric"
+											maxLength={1}
+											value={digit}
+											onChange={(e) => handleChange(idx, e.target.value)}
+											onKeyDown={(e) => handleKeyDown(idx, e)}
+											ref={(ref) => (inputRefs.current[idx] = ref)}
+											className="w-full h-16 text-center text-white text-2xl rounded-lg bg-[#23213a] border border-[#726c8e] placeholder:text-[#726c8e] montserrat outline-none focus:border-[#3920BA] focus:ring-1"
+											placeholder="-"
+											autoFocus={idx === 0}
+										/>
+									))}
+								</div>
+								{codeErrors.code && (
+									<span className="text-red-500 text-sm montserrat">
+										{codeErrors.code.message}
+									</span>
+								)}
+								<button
+									type="submit"
+									className="w-full bg-[#2f1d88] rounded-lg p-4 text-[16px] text-white font-normal text-center leading-tight tracking-tight cursor-pointer montserrat"
+									disabled={isVerifying || codeDigits.some((d) => !d)}>
+									{isVerifying ? (
+										<Loader2 className="animate-spin mx-auto" />
+									) : (
+										"Verify Code"
+									)}
+								</button>
+							</form>
+						)}
+
+						{step === 3 && (
+							<form
+								onSubmit={handlePasswordSubmit(onPasswordSubmit)}
+								className="w-full flex flex-col gap-8">
+								<h1 className="subHeading text-white font-bold leading-tight tracking-tight montserrat mb-2">
+									Enter New Password
+								</h1>
+								<input
+									{...registerPassword("password")}
+									type="password"
+									placeholder="New Password"
+									className="w-full h-16 text-white text-xl rounded-lg bg-[#23213a] border border-[#726c8e] px-4 montserrat outline-none focus:border-[#3920BA] focus:ring-1 placeholder:text-[#726c8e]"
+								/>
+								{passwordErrors.password && (
+									<span className="text-red-500 text-sm montserrat">
+										{passwordErrors.password.message}
+									</span>
+								)}
+								<button
+									type="submit"
+									className="w-full bg-[#2f1d88] rounded-lg p-4 text-[16px] text-white font-normal text-center leading-tight tracking-tight cursor-pointer montserrat"
+									disabled={isPasswordSubmitting}>
+									{isPasswordSubmitting ? (
+										<Loader2 className="animate-spin mx-auto" />
+									) : (
+										"Reset Password"
+									)}
+								</button>
+							</form>
+						)}
 					</div>
 				</div>
 			</div>

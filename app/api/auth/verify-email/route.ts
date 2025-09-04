@@ -6,7 +6,6 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    // Zod validation!
     const result = emailVerifySchema.safeParse({ code: body.code });
     if (!body.email || !result.success) {
       return NextResponse.json(

@@ -131,7 +131,7 @@ export default function LoginForm() {
 								</div>
 								<div className="w-full flex items-end justify-end gap-2 mt-2">
 									<Link
-										href="/reset"
+										href="/reset-password"
 										className="text-sm text-[#ADABB8] font-normal leading-tight tracking-tight cursor-pointer">
 										forgot password?
 									</Link>
