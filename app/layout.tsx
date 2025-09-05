@@ -1,4 +1,5 @@
 import "@/styles/globals.css";
+import ToastProvider from "@/providers/toast-provider";
 
 export const metadata = {
 	title: "Next.js Auth Starter",
@@ -12,7 +13,10 @@ export default function RootLayout({
 }) {
 	return (
 		<html lang="en">
-			<body>{children}</body>
+			<body>
+				<ToastProvider />
+				{children}
+			</body>
 		</html>
 	);
 }

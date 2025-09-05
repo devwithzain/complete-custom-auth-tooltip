@@ -1,4 +1,5 @@
 "use client";
+import axios from "axios";
 import Link from "next/link";
 import Image from "next/image";
 import Socials from "./socials";
@@ -9,11 +10,7 @@ import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-	registerFormSchema,
-	TemailVerifyFormData,
-	TregisterFormData,
-} from "@/schemas";
+import { registerFormSchema, TregisterFormData } from "@/schemas";
 import { AtSign, Eye, EyeOff, Loader2, Lock, User } from "lucide-react";
 
 export default function RegisterForm() {
@@ -33,18 +30,18 @@ export default function RegisterForm() {
 	};
 
 	const onSubmits = async (data: TregisterFormData) => {
-		const response = await fetch("/api/auth/register", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(data),
-		});
-		const json = await response.json();
-		if (response.ok) {
-			toast.success(json.success);
-			router.push(`/verify?email=${encodeURIComponent(data.email)}`);
-		} else {
-			toast.error(json.error);
-			reset();
+		try {
+			const response = await axios.post("/api/auth/register", data);
+			toast.success(response.data.message);
+			router.push("/verify");
+			router.refresh();
+		} catch (error: any) {
+			const msg =
+				error?.response?.data?.error ||
+				error?.response?.data?.message ||
+				error.message ||
+				"Login failed";
+			toast.error(msg);
 		}
 	};
 

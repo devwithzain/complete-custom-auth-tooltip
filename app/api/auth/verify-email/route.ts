@@ -5,17 +5,17 @@ import { emailVerifySchema } from '@/schemas';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    const parsed = emailVerifySchema.safeParse({ code: body.code });
 
-    const result = emailVerifySchema.safeParse({ code: body.code });
-    if (!body.email || !result.success) {
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: result.error?.issues[0]?.message || "Email and code are required." },
+        { error: "Invalid code." },
         { status: 400 }
       );
     }
 
     const email = body.email;
-    const code = result.data.code;
+    const code = parsed.data.code;
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {

@@ -1,4 +1,5 @@
 "use client";
+import axios from "axios";
 import Image from "next/image";
 import { formimg } from "@/public";
 import toast from "react-hot-toast";
@@ -51,21 +52,20 @@ export default function VerifyEmailForm() {
 
 	const onSubmits = async (data: TemailVerifyFormData) => {
 		try {
-			const res = await fetch("/api/auth/verify-email", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ email, code: data.code }),
+			const response = await axios.post("/api/auth/verify-email", {
+				email,
+				data,
 			});
-			const body = await res.json();
-			if (res.ok && body.success) {
-				toast.success(body.message || "Email verified!");
-				// Optionally redirect on success
-				router.push("/login");
-			} else {
-				toast.error(body.error || "Verification failed");
-			}
-		} catch {
-			toast.error("Something went wrong. Please try again.");
+			toast.success(response.data.message);
+			router.push("/login");
+			router.refresh();
+		} catch (error: any) {
+			const msg =
+				error?.response?.data?.error ||
+				error?.response?.data?.message ||
+				error.message ||
+				"Verification failed";
+			toast.error(msg);
 		}
 	};
 
@@ -103,7 +103,9 @@ export default function VerifyEmailForm() {
 										value={digit}
 										onChange={(e) => handleChange(idx, e.target.value)}
 										onKeyDown={(e) => handleKeyDown(idx, e)}
-										ref={(ref) => (inputRefs.current[idx] = ref)}
+										ref={(ref) => {
+											inputRefs.current[idx] = ref;
+										}}
 										className="w-full h-16 text-center text-white text-2xl rounded-lg bg-[#23213a] border border-[#726c8e] placeholder:text-[#726c8e] montserrat outline-none focus:border-[#3920BA] focus:ring-1"
 										placeholder="-"
 										autoFocus={idx === 0}

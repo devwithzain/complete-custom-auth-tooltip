@@ -1,4 +1,5 @@
 "use client";
+import axios from "axios";
 import Link from "next/link";
 import Image from "next/image";
 import Socials from "./socials";
@@ -29,18 +30,28 @@ export default function LoginForm() {
 	});
 
 	const onSubmits = async (data: TloginFormData) => {
-		const response = await fetch("/api/auth/login", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(data),
-		});
-		if (!response.ok) {
-			toast.error(response.statusText);
-		}
-		if (response.ok) {
-			toast.success("Logged in");
+		try {
+			const response = await axios.post("/api/auth/login", data);
+
+			if (response.data.twoFactor) {
+				toast("2FA required, please complete verification.");
+				return;
+			}
+
+			toast.success(response.data.message);
 			router.push("/dashboard");
-			router.refresh();
+		} catch (error: any) {
+			if (error?.response?.status === 403) {
+				toast.error(error?.response?.data?.message);
+				router.push("/verify");
+				return;
+			}
+			const msg =
+				error?.response?.data?.error ||
+				error?.response?.data?.message ||
+				error.message ||
+				"Login failed";
+			toast.error(msg);
 		}
 	};
 

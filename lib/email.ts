@@ -1,10 +1,10 @@
 import { Resend } from "resend";
-
+import toast from "react-hot-toast";
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function sendEmailVerificationCode(to: string, code: string) {
   if (!process.env.RESEND_API_KEY) {
-    console.warn('RESEND_API_KEY missing; skipping email send.');
+    toast.error('RESEND_API_KEY missing; skipping email send.');
     return;
   }
   await resend.emails.send({
@@ -18,7 +18,7 @@ export async function sendEmailVerificationCode(to: string, code: string) {
 
 export async function sendPasswordResetCodeEmail(to: string, code: string) {
   if (!process.env.RESEND_API_KEY) {
-    console.warn('RESEND_API_KEY missing; skipping email send.');
+    toast.error('RESEND_API_KEY missing; skipping email send.');
     return;
   }
   await resend.emails.send({
@@ -32,7 +32,7 @@ export async function sendPasswordResetCodeEmail(to: string, code: string) {
 
 export async function sendPasswordReset(to: string, resetCode: string) {
   if (!process.env.RESEND_API_KEY) {
-    console.warn('RESEND_API_KEY missing; skipping email send.');
+    toast.error('RESEND_API_KEY missing; skipping email send.');
     return;
   }
   await resend.emails.send({

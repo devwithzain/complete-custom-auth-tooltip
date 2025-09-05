@@ -47,9 +47,9 @@ export default function ResetPasswordForm() {
 		register: registerPassword,
 		handleSubmit: handlePasswordSubmit,
 		formState: { isSubmitting: isPasswordSubmitting, errors: passwordErrors },
-	} = useForm({
+	} = useForm<TresetPasswordFormData>({
 		resolver: zodResolver(resetPasswordSchema),
-		defaultValues: { email, code, password: "" },
+		defaultValues: { password: "" },
 	});
 
 	// Email submit
@@ -193,7 +193,7 @@ export default function ResetPasswordForm() {
 											value={digit}
 											onChange={(e) => handleChange(idx, e.target.value)}
 											onKeyDown={(e) => handleKeyDown(idx, e)}
-											ref={(ref) => (inputRefs.current[idx] = ref)}
+											ref={(ref) => { inputRefs.current[idx] = ref; }}
 											className="w-full h-16 text-center text-white text-2xl rounded-lg bg-[#23213a] border border-[#726c8e] placeholder:text-[#726c8e] montserrat outline-none focus:border-[#3920BA] focus:ring-1"
 											placeholder="-"
 											autoFocus={idx === 0}

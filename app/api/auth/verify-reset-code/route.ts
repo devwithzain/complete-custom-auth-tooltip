@@ -17,8 +17,5 @@ export async function POST(req: Request) {
 
    if (!token) return NextResponse.json({ error: "Invalid or expired code" }, { status: 400 });
 
-   // Mark code as used
-   await prisma.verificationToken.update({ where: { id: token.id }, data: { consumedAt: new Date() } });
-
    return NextResponse.json({ success: true, message: "Code verified!" });
 }
