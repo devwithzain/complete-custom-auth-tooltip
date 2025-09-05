@@ -27,11 +27,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
     }
 
-    // if (user.twoFactorEnabled) {
-    //   console.log('2FA required for user:', email);
-    //   return NextResponse.json({ message: '2FA required', twoFactor: true }, { status: 412 });
-    // }
-
     const ipInfoRes = await fetch('https://ipinfo.io/json');
     if (ipInfoRes.ok) {
       const ipInfo = await ipInfoRes.json();
@@ -43,6 +38,9 @@ export async function POST(req: Request) {
           { status: 403 }
         );
       }
+      if (user.twoFactorEnabled) {
+        return NextResponse.json({ message: '2FA required', twoFactor: true }, { status: 412 });
+      }
       return NextResponse.json({
         success: true,
         message: 'Logged in successfully'
@@ -52,6 +50,7 @@ export async function POST(req: Request) {
     }
 
   } catch (error) {
+    console.log(error);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

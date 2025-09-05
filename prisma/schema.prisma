@@ -29,6 +29,7 @@ model User {
   emailVerified     Boolean             @default(false)
   twoFactorEnabled  Boolean             @default(false)
   twoFactorSecret   String?
+  role              Role                @default(USER)
   sessions          Session[]
   VerificationToken VerificationToken[]
 }
@@ -51,4 +52,10 @@ model VerificationToken {
 enum TokenType {
   EMAIL_VERIFY
   PASSWORD_RESET
+}
+
+enum Role {
+  USER
+  ADMIN
+  SELLER
 }

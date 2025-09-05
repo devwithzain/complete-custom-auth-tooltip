@@ -1,13 +1,13 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/db";
+import { redirect } from "next/navigation";
+import { Role } from "@/lib/generated/prisma";
+import { getCurrentUser } from "@/lib/session";
 
-export default async function Dashboard() {
+export default async function UserDashboard() {
 	const user = await getCurrentUser();
-	if (!user) redirect("/login");
+	if (!user || user.role !== Role.USER) redirect("/login");
 
-	// Fetch devices (sessions) from DB
 	const sessions = await prisma.session.findMany({
 		where: { userId: user.id },
 		orderBy: { lastUsed: "desc" },
@@ -17,9 +17,9 @@ export default async function Dashboard() {
 		id: session.id,
 		device: session.userAgent || "Unknown device",
 		ip: session.ip || "Unknown IP",
-		location: "Unknown location", // You can add location lookup later
+		location: "Unknown location",
 		lastActive: session.lastUsed.toLocaleString(),
-		current: false, // You can set this based on current session token
+		current: false,
 	}));
 
 	return (
@@ -48,7 +48,6 @@ export default async function Dashboard() {
 				</div>
 			</div>
 
-			{/* Device Login Tracking */}
 			<div className="card mt-6">
 				<h2 className="text-xl font-semibold mb-4">Device Login Tracking</h2>
 				<div className="space-y-3">

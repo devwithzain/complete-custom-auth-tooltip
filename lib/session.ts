@@ -1,5 +1,5 @@
+import { prisma } from '@/lib/db';
 import { cookies } from 'next/headers';
-import { prisma } from './db';
 import { generateToken } from './crypto';
 
 const COOKIE_NAME = process.env.AUTH_COOKIE_NAME || 'auth_session';
@@ -48,6 +48,18 @@ export async function getCurrentUser() {
 export async function requireUser() {
   const user = await getCurrentUser();
   if (!user) throw new Error('UNAUTHORIZED');
+  return user;
+}
+
+export async function requireRole(role: 'USER' | 'ADMIN' | 'SELLER') {
+  const user = await requireUser();
+  if (user.role !== role) throw new Error('FORBIDDEN');
+  return user;
+}
+
+export async function requireAnyRole(roles: ('USER' | 'ADMIN' | 'SELLER')[]) {
+  const user = await requireUser();
+  if (!roles.includes(user.role)) throw new Error('FORBIDDEN');
   return user;
 }
 

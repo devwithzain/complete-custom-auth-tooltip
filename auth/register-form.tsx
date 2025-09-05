@@ -33,14 +33,14 @@ export default function RegisterForm() {
 		try {
 			const response = await axios.post("/api/auth/register", data);
 			toast.success(response.data.message);
-			router.push("/verify");
+			router.push(`/verify?email=${encodeURIComponent(data.email)}`);
 			router.refresh();
 		} catch (error: any) {
 			const msg =
 				error?.response?.data?.error ||
 				error?.response?.data?.message ||
 				error.message ||
-				"Login failed";
+				"Register failed";
 			toast.error(msg);
 		}
 	};

@@ -9,13 +9,20 @@ export async function POST(req: Request) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Invalid code." },
+        { error: "Input validation failed." },
         { status: 400 }
       );
     }
 
     const email = body.email;
     const code = parsed.data.code;
+
+    if (!email) {
+      return NextResponse.json(
+        { error: "Email is required" },
+        { status: 400 }
+      );
+    }
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {

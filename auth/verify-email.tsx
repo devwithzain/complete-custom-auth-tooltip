@@ -15,8 +15,8 @@ export default function VerifyEmailForm() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const email = searchParams.get("email") || "";
-	const [codeDigits, setCodeDigits] = useState(["", "", "", "", "", ""]);
 	const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+	const [codeDigits, setCodeDigits] = useState(["", "", "", "", "", ""]);
 
 	const {
 		handleSubmit,
@@ -54,7 +54,7 @@ export default function VerifyEmailForm() {
 		try {
 			const response = await axios.post("/api/auth/verify-email", {
 				email,
-				data,
+				code: data.code,
 			});
 			toast.success(response.data.message);
 			router.push("/login");

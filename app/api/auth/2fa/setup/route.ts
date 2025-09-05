@@ -1,8 +1,7 @@
-// app/api/auth/2fa/setup/route.ts
-import { NextResponse } from "next/server";
+import QRCode from "qrcode";
 import { prisma } from "@/lib/db";
 import speakeasy from "speakeasy";
-import QRCode from "qrcode";
+import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/session";
 
 export async function POST() {
@@ -13,7 +12,6 @@ export async function POST() {
     name: `NextAuthStarter:${session.email}`,
   });
 
-  // Save secret temp in DB (mark as pending until verified)
   await prisma.user.update({
     where: { id: session.id },
     data: {

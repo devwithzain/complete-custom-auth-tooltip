@@ -15,7 +15,10 @@ import { AtSign, Eye, EyeOff, Loader2, Lock } from "lucide-react";
 
 export default function LoginForm() {
 	const router = useRouter();
+	const [twoFACode, setTwoFACode] = useState("");
+	const [pending2FA, setPending2FA] = useState(false);
 	const [showPassword, setShowPassword] = useState(false);
+	const [is2FALoading, setIs2FALoading] = useState(false);
 
 	const togglePasswordVisibility = () => {
 		setShowPassword(!showPassword);
@@ -25,6 +28,7 @@ export default function LoginForm() {
 		register,
 		handleSubmit,
 		formState: { isSubmitting, errors },
+		reset,
 	} = useForm<TloginFormData>({
 		resolver: zodResolver(loginFormSchema),
 	});
@@ -32,18 +36,17 @@ export default function LoginForm() {
 	const onSubmits = async (data: TloginFormData) => {
 		try {
 			const response = await axios.post("/api/auth/login", data);
-
-			if (response.data.twoFactor) {
-				toast("2FA required, please complete verification.");
+			toast.success(response.data.message);
+			router.push("/user-dashboard");
+		} catch (error: any) {
+			if (error?.response?.status === 412 && error?.response?.data?.twoFactor) {
+				toast.success("2FA required, please enter your authenticator code.");
+				setPending2FA(true);
+				reset();
 				return;
 			}
-
-			toast.success(response.data.message);
-			router.push("/dashboard");
-		} catch (error: any) {
 			if (error?.response?.status === 403) {
 				toast.error(error?.response?.data?.message);
-				router.push("/verify");
 				return;
 			}
 			const msg =
@@ -53,6 +56,32 @@ export default function LoginForm() {
 				"Login failed";
 			toast.error(msg);
 		}
+	};
+
+	const handle2FAVerify = async (e: React.FormEvent) => {
+		e.preventDefault();
+		setIs2FALoading(true);
+		try {
+			const res = await axios.post("/api/auth/2fa/verify", {
+				token: twoFACode,
+			});
+			if (res.data.success) {
+				toast.success("2FA verified, logged in!");
+				setPending2FA(false);
+				setTwoFACode("");
+				router.push("/user-dashboard");
+			} else {
+				toast.error(res.data.error || "Invalid 2FA code");
+			}
+		} catch (error: any) {
+			const msg =
+				error?.response?.data?.error ||
+				error?.response?.data?.message ||
+				error.message ||
+				"2FA verification failed";
+			toast.error(msg);
+		}
+		setIs2FALoading(false);
 	};
 
 	return (
@@ -86,79 +115,111 @@ export default function LoginForm() {
 								</Link>
 							</div>
 						</div>
-						<form
-							onSubmit={handleSubmit(onSubmits)}
-							className="flex flex-col gap-5">
-							<div className="flex flex-col gap-2">
-								<div className="flex flex-col gap-5">
-									<div className="flex flex-col gap-2">
-										<div
-											className={`w-full flex items-center bg-[#3c375269] rounded-lg p-4 focus-within:border-[#3920BA] focus-within:border-[1px] focus-within:ring-1 ${
-												errors.email && "border-red-500 border-[1px]"
-											}`}>
-											<AtSign className="text-[#6D6980] mr-3" />
-											<input
-												type="email"
-												{...register("email")}
-												placeholder="Email"
-												className={`bg-transparent text-white placeholder:text-[#6D6980] focus:outline-none outline-none w-full montserrat`}
-											/>
+						{/* Login Form - hide when 2FA step is pending */}
+						{!pending2FA && (
+							<form
+								onSubmit={handleSubmit(onSubmits)}
+								className="flex flex-col gap-5">
+								<div className="flex flex-col gap-2">
+									<div className="flex flex-col gap-5">
+										<div className="flex flex-col gap-2">
+											<div
+												className={`w-full flex items-center bg-[#3c375269] rounded-lg p-4 focus-within:border-[#3920BA] focus-within:border-[1px] focus-within:ring-1 ${
+													errors.email && "border-red-500 border-[1px]"
+												}`}>
+												<AtSign className="text-[#6D6980] mr-3" />
+												<input
+													type="email"
+													{...register("email")}
+													placeholder="Email"
+													className={`bg-transparent text-white placeholder:text-[#6D6980] focus:outline-none outline-none w-full montserrat`}
+												/>
+											</div>
+											{errors.email && (
+												<span className="text-red-500 text-sm montserrat">
+													{errors.email.message}
+												</span>
+											)}
 										</div>
-										{errors.email && (
-											<span className="text-red-500 text-sm montserrat">
-												{errors.email.message}
-											</span>
-										)}
+										<div className="flex flex-col gap-2">
+											<div
+												className={`w-full flex items-center bg-[#3c375269] rounded-lg p-4 focus-within:border-[#3920BA] focus-within:border-[1px] focus-within:ring-1 ${
+													errors.password && "border-red-500 border-[1px]"
+												}`}>
+												<Lock className="text-[#6D6980] mr-3" />
+												<input
+													type={showPassword ? "text" : "password"}
+													{...register("password")}
+													placeholder="Enter your password"
+													className={`bg-transparent text-white placeholder:text-[#6D6980] focus:outline-none outline-none w-full montserrat`}
+												/>
+												<button
+													type="button"
+													onClick={togglePasswordVisibility}
+													className="ml-2">
+													{showPassword ? (
+														<EyeOff className="text-[#6D6980]" />
+													) : (
+														<Eye className="text-[#6D6980]" />
+													)}
+												</button>
+											</div>
+											{errors.password && (
+												<span className="text-red-500 text-sm montserrat">
+													{errors.password.message}
+												</span>
+											)}
+										</div>
 									</div>
-									<div className="flex flex-col gap-2">
-										<div
-											className={`w-full flex items-center bg-[#3c375269] rounded-lg p-4 focus-within:border-[#3920BA] focus-within:border-[1px] focus-within:ring-1 ${
-												errors.password && "border-red-500 border-[1px]"
-											}`}>
-											<Lock className="text-[#6D6980] mr-3" />
-											<input
-												type={showPassword ? "text" : "password"}
-												{...register("password")}
-												placeholder="Enter your password"
-												className={`bg-transparent text-white placeholder:text-[#6D6980] focus:outline-none outline-none w-full montserrat`}
-											/>
-											<button
-												type="button"
-												onClick={togglePasswordVisibility}
-												className="ml-2">
-												{showPassword ? (
-													<EyeOff className="text-[#6D6980]" />
-												) : (
-													<Eye className="text-[#6D6980]" />
-												)}
-											</button>
-										</div>
-										{errors.password && (
-											<span className="text-red-500 text-sm montserrat">
-												{errors.password.message}
-											</span>
-										)}
+									<div className="w-full flex items-end justify-end gap-2 mt-2">
+										<Link
+											href="/reset-password"
+											className="text-sm text-[#ADABB8] font-normal leading-tight tracking-tight cursor-pointer">
+											forgot password?
+										</Link>
 									</div>
 								</div>
-								<div className="w-full flex items-end justify-end gap-2 mt-2">
-									<Link
-										href="/reset-password"
-										className="text-sm text-[#ADABB8] font-normal leading-tight tracking-tight cursor-pointer">
-										forgot password?
-									</Link>
-								</div>
-							</div>
-							<button
-								type="submit"
-								className="w-full bg-[#2f1d88] rounded-lg p-4 text-[16px] text-white font-normal text-center leading-tight tracking-tight cursor-pointer montserrat"
-								disabled={isSubmitting}>
-								{isSubmitting ? (
-									<Loader2 className="animate-spin mx-auto" />
-								) : (
-									"Log In"
-								)}
-							</button>
-						</form>
+								<button
+									type="submit"
+									className="w-full bg-[#2f1d88] rounded-lg p-4 text-[16px] text-white font-normal text-center leading-tight tracking-tight cursor-pointer montserrat"
+									disabled={isSubmitting}>
+									{isSubmitting ? (
+										<Loader2 className="animate-spin mx-auto" />
+									) : (
+										"Log In"
+									)}
+								</button>
+							</form>
+						)}
+						{/* 2FA Code Form */}
+						{pending2FA && (
+							<form
+								onSubmit={handle2FAVerify}
+								className="flex flex-col gap-4 mt-6">
+								<label className="text-white font-bold">Enter 2FA Code</label>
+								<input
+									type="text"
+									value={twoFACode}
+									onChange={(e) => setTwoFACode(e.target.value)}
+									placeholder="6-digit code from app"
+									className="bg-[#3c375269] text-white p-4 rounded-lg"
+									autoFocus
+									required
+									maxLength={6}
+									inputMode="numeric"
+								/>
+								<button
+									type="submit"
+									className="w-full bg-[#2f1d88] rounded-lg p-4 text-[16px] text-white font-normal text-center leading-tight tracking-tight cursor-pointer montserrat"
+									disabled={is2FALoading}>
+									{is2FALoading ? (
+										<Loader2 className="animate-spin mx-auto" />
+									) : (
+										"Verify 2FA"
+									)}
+								</button>
+							</form>
+						)}
 						<Socials />
 					</div>
 				</div>

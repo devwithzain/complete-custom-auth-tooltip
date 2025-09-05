@@ -1,46 +1,68 @@
-import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/session";
-import { redirect } from "next/navigation";
-import QRCode from "qrcode";
+"use client";
+import { useEffect, useState } from "react";
+import { TwoFactorSetupForm } from "@/auth/two-factor-setup";
+import { getCurrentUser } from "@/lib/use-current-user";
+import axios from "axios";
+import { toast } from "react-hot-toast";
 
-async function getSetup() {
-	const user = await getCurrentUser();
-	if (!user) redirect("/login");
-	const fresh = await prisma.user.findUnique({ where: { id: user.id } });
-	return fresh!;
-}
+export default function SecurityPage() {
+	const [user, setUser] = useState<any>(null);
+	const [showSetup, setShowSetup] = useState(false);
 
-export default async function SecurityPage() {
-	const user = await getSetup();
-	let qrDataUrl: string | null = null;
-	if (!user.twoFactorEnabled) {
-		// Ask server for TOTP provisioning via API (but also show a placeholder until verified)
-	}
+	useEffect(() => {
+		const fetchUser = async () => {
+			const currentUser = await getCurrentUser();
+			setUser(currentUser);
+		};
+		fetchUser();
+	}, []);
+
+	const disable2FA = async () => {
+		try {
+			await axios.post("/api/auth/2fa/disable");
+			toast.success("Two-factor authentication disabled.");
+			window.location.reload();
+		} catch (error) {
+			toast.error("Failed to disable two-factor authentication.");
+		}
+	};
 
 	return (
-		<main className="container">
+		<main className="w-7xl">
 			<div className="card space-y-4">
 				<h1 className="text-2xl font-semibold">Security</h1>
 				<div className="space-y-2">
 					<div className="p-4 border rounded-xl">
 						<h2 className="font-medium">Two‑Factor Authentication (TOTP)</h2>
-						{user.twoFactorEnabled ? (
+						{user && user.twoFactorEnabled ? (
 							<form
-								action="/api/auth/2fa/disable"
+								onSubmit={disable2FA}
 								method="post"
 								className="space-y-2">
 								<p className="text-sm text-gray-600">2FA is enabled.</p>
-								<button className="btn">Disable 2FA</button>
+								<button
+									type="submit"
+									className="btn">
+									Disable 2FA
+								</button>
 							</form>
+						) : showSetup ? (
+							<TwoFactorSetupForm onSuccess={() => setShowSetup(false)} />
 						) : (
 							<form
-								action="/api/auth/2fa/setup"
-								method="post"
+								onSubmit={(e) => {
+									e.preventDefault();
+									setShowSetup(true);
+								}}
 								className="space-y-2">
 								<p className="text-sm text-gray-600">
 									Protect your account with an authenticator app.
 								</p>
-								<button className="btn">Begin setup</button>
+								<button
+									className="btn"
+									type="submit">
+									Begin setup
+								</button>
 							</form>
 						)}
 					</div>

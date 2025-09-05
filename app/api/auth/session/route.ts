@@ -4,6 +4,6 @@ import { getCurrentUser } from '@/lib/session';
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ user: null });
-  const { id, email, name, emailVerifiedAt, twoFactorEnabled } = user;
-  return NextResponse.json({ user: { id, email, name, emailVerifiedAt, twoFactorEnabled } });
+  const { id, email, name, emailVerified, twoFactorEnabled } = user;
+  return NextResponse.json({ user: { id, email, name, emailVerified, twoFactorEnabled } });
 }
