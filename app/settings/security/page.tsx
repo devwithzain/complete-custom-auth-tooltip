@@ -1,9 +1,9 @@
 "use client";
-import { useEffect, useState } from "react";
-import { TwoFactorSetupForm } from "@/auth/two-factor-setup";
-import { getCurrentUser } from "@/lib/use-current-user";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import { useEffect, useState } from "react";
+import { getCurrentUser } from "@/lib/use-current-user";
+import { TwoFactorSetupForm } from "@/auth/two-factor-setup";
 
 export default function SecurityPage() {
 	const [user, setUser] = useState<any>(null);
@@ -33,7 +33,7 @@ export default function SecurityPage() {
 				<h1 className="text-2xl font-semibold">Security</h1>
 				<div className="space-y-2">
 					<div className="p-4 border rounded-xl">
-						<h2 className="font-medium">Two‑Factor Authentication (TOTP)</h2>
+						<h2 className="font-medium">Two Factor Authentication (TOTP)</h2>
 						{user && user.twoFactorEnabled ? (
 							<form
 								onSubmit={disable2FA}

@@ -1,13 +1,11 @@
 import { Resend } from "resend";
-
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function sendEmailVerificationCode(to: string, code: string) {
   if (!process.env.RESEND_API_KEY) {
-    console.error('RESEND_API_KEY missing; skipping email send.');
     throw new Error('Email configuration missing');
   }
-  
+
   try {
     const result = await resend.emails.send({
       from: 'onboarding@resend.dev',
@@ -17,20 +15,17 @@ export async function sendEmailVerificationCode(to: string, code: string) {
         <p><strong style="font-size: 24px; letter-spacing: 2px;">${code}</strong></p>
         <p>This code will expire in 10 minutes.</p>`
     });
-    console.log('Email sent successfully:', result);
     return result;
   } catch (error) {
-    console.error('Failed to send email:', error);
     throw error;
   }
 }
 
 export async function sendPasswordResetCodeEmail(to: string, code: string) {
   if (!process.env.RESEND_API_KEY) {
-    console.error('RESEND_API_KEY missing; skipping email send.');
     throw new Error('Email configuration missing');
   }
-  
+
   try {
     const result = await resend.emails.send({
       from: 'onboarding@resend.dev',
@@ -40,20 +35,17 @@ export async function sendPasswordResetCodeEmail(to: string, code: string) {
         <p><strong style="font-size: 24px; letter-spacing: 2px;">${code}</strong></p>
         <p>This code will expire in 10 minutes.</p>`
     });
-    console.log('Password reset email sent successfully:', result);
     return result;
   } catch (error) {
-    console.error('Failed to send password reset email:', error);
     throw error;
   }
 }
 
 export async function sendPasswordReset(to: string, resetCode: string) {
   if (!process.env.RESEND_API_KEY) {
-    console.error('RESEND_API_KEY missing; skipping email send.');
     throw new Error('Email configuration missing');
   }
-  
+
   try {
     const result = await resend.emails.send({
       from: 'onboarding@resend.dev',
@@ -63,10 +55,8 @@ export async function sendPasswordReset(to: string, resetCode: string) {
         <p><strong style="font-size: 24px; letter-spacing: 2px;">${resetCode}</strong></p>
         <p>This code will expire in 10 minutes.</p>`
     });
-    console.log('Password reset email sent successfully:', result);
     return result;
   } catch (error) {
-    console.error('Failed to send password reset email:', error);
     throw error;
   }
 }

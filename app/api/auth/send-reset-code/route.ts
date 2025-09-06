@@ -1,11 +1,8 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { emailSchema } from "@/schemas";
-import { sendPasswordResetCodeEmail } from "@/lib/email"; // You have to implement this
-
-function generate6DigitCode() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
+import { NextResponse } from "next/server";
+import { sendPasswordResetCodeEmail } from "@/lib/email";
+import { generate6DigitCode } from "@/lib/generate-code";
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -17,7 +14,7 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ error: "Email not found" }, { status: 404 });
 
   const code = generate6DigitCode();
-  const expiresAt = new Date(Date.now() + 1000 * 60 * 10); // 10 min
+  const expiresAt = new Date(Date.now() + 1000 * 60 * 10);
 
   await prisma.verificationToken.create({
     data: { userId: user.id, code, type: "PASSWORD_RESET", expiresAt }

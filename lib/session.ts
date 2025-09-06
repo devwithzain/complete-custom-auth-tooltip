@@ -51,18 +51,6 @@ export async function requireUser() {
   return user;
 }
 
-export async function requireRole(role: 'USER' | 'ADMIN' | 'SELLER') {
-  const user = await requireUser();
-  if (user.role !== role) throw new Error('FORBIDDEN');
-  return user;
-}
-
-export async function requireAnyRole(roles: ('USER' | 'ADMIN' | 'SELLER')[]) {
-  const user = await requireUser();
-  if (!roles.includes(user.role)) throw new Error('FORBIDDEN');
-  return user;
-}
-
 export async function destroySession() {
   const token = (await cookies()).get(COOKIE_NAME)?.value;
   if (token) {

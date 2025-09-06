@@ -47,7 +47,6 @@ export default async function UserDashboard() {
 					</form>
 				</div>
 			</div>
-
 			<div className="card mt-6">
 				<h2 className="text-xl font-semibold mb-4">Device Login Tracking</h2>
 				<div className="space-y-3">

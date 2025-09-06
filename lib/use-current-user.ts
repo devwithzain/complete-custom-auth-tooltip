@@ -21,7 +21,7 @@ export function useCurrentUser() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/auth/me');
+      const response = await fetch('/api/auth/profile');
 
       if (!response.ok) {
         if (response.status === 401) {
@@ -63,7 +63,7 @@ export function useCurrentUser() {
 
 // Alternative hook for getting user data without loading state
 export function getCurrentUser(): Promise<User | null> {
-  return fetch('/api/auth/me')
+  return fetch('/api/auth/profile')
     .then(response => {
       if (!response.ok) {
         if (response.status === 401) {
